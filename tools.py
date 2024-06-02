@@ -1,3 +1,4 @@
+## Importing libraries and files
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -9,9 +10,11 @@ from langchain_community.document_loaders import PyPDFLoader
 from crewai_tools import tool
 from crewai_tools import SerperDevTool
 
+## Creating search tool
 search_tool = SerperDevTool()
 # search_tool = DuckDuckGoSearchRun()
 
+## Creating custom pdf reader tool
 class BloodTestReportTool:
     @tool("Read Blood Test Report")
     def read_data_tool(path='data/sample.pdf'):

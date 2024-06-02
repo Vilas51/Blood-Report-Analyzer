@@ -1,8 +1,10 @@
+## Importing libraries and files
 from crewai import Task
 
 from agents import doctor, verifier
 from tools import search_tool, BloodTestReportTool
-    
+
+## Creatinga a task to help solve user's query
 help_patients = Task(
     description="First wait for the verifier to let you know if the data is a blood test report and then take any action.\n\
 You should solve the user's query: {query}\n\
