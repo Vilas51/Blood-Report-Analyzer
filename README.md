@@ -1,5 +1,7 @@
 # Project Setup and Execution Guide
-
+```sh
+git clone git@github.com:Ronit33/blood-test-analyser.git
+```
 ## Getting Started
 
 ### 1. Create a Virtual Environment
