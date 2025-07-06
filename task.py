@@ -1,50 +1,71 @@
-## Importing libraries and files
 from crewai import Task
+from agents import doctor, verifier, nutritionist, exercise_specialist
+from tools import BloodTestReportTool, NutritionTool, ExerciseTool  # These are already instances!
+from pydantic import BaseModel
 
-from agents import doctor, verifier
-from tools import search_tool, BloodTestReportTool
+# DON'T re-instantiate these
+# nutrition_tool = NutritionTool()
+# exercise_tool = ExerciseTool()
 
-## Creatinga a task to help solve user's query
+class HelpPatientsInput(BaseModel):
+    query: str
+    report_path: str
+
+# Just use imported instances directly
+# Doctor's diagnosis task
 help_patients = Task(
-    description="First wait for the verifier to let you know if the data is a blood test report and then take any action.\n\
-You should solve the user's query: {query}\n\
-Search the internet to get up-to-date solutions to user's query.\n\
-You should give detailed answers to the user. If the user asks for a summary of the whole report then you should summarise every part of it.\n\
-If you find anything abnormal in the report you must notify them.\n\
-Search the internet and \
-find up-to-date health recommendations from the web for the patients based on their \
-blood test reports in detail. Additionally, provide url links to the articles you recommended to \
-support each suggestion. Your url links should match with the health suggestions. Do not make up a url",
-
-    expected_output="""Give your response to user's query in bullet points.
-If the user didn't ask anything then \
-you should give detailed summary of the blood test report \
-in bullet points in casual terms as if you are explaining to someone \
-who does not know anything about medical terms.
-Provide detailed health recommendations from the web along with their respective article url links, \
-listed in numerical points.""",
-
+    description="Interpret the blood test report and provide a clear summary addressing the user's health query.",
+    expected_output="""
+- Identify any abnormalities or critical markers in the report
+- Provide possible medical implications for abnormal results
+- Suggest follow-up actions such as seeing a specialist or getting more tests
+- Use medical terminology, but explain in layman's terms
+- Ensure recommendations are evidence-based""",
     agent=doctor,
-    tools=[search_tool, BloodTestReportTool().read_data_tool],
+    tools=[BloodTestReportTool],
+    input_schema=HelpPatientsInput,
     async_execution=False,
-    output_file="health-recommendations.md"
 )
 
+# Nutritionist task
+nutrition_analysis = Task(
+    description="Analyze the user's blood report for any nutritional deficiencies or markers, and provide appropriate dietary suggestions.",
+    expected_output="""
+- Identify key nutrient-related markers (e.g., Vitamin B12, D, Iron)
+- Suggest foods to improve levels
+- Recommend supplements if deficiencies are evident
+- Provide practical diet tips based on test results
+- Ensure advice is safe, accessible, and tailored to general health""",
+    agent=nutritionist,
+    tools=[NutritionTool, BloodTestReportTool],
+    async_execution=False,
+)
 
-## Verification task overview.
-# First read the data provided by the user. If its not a blood test report then don't do anything and just say:\
-# This is not a blood test report and end the process.\n\
-# If its a blood test report then:\n\
-# If the user query is completely irrelevant to the blood test report then you should say: This question is not related to your Blood Test Report.\
-    
+# Exercise specialist task
+exercise_planning = Task(
+    description="Create a personalized exercise plan based on the user's health indicators from the blood test report and query.",
+    expected_output="""
+- Provide a basic exercise plan suited to the user's age and fitness level
+- Avoid contraindicated exercises for any medical flags
+- Include frequency, type (e.g., cardio, strength), and duration
+- Recommend warm-up, cool-down, and safety guidelines
+- Encourage consistency and gradual progression
+""",
+    agent=exercise_specialist,
+    tools=[ExerciseTool, BloodTestReportTool],
+    async_execution=False,
+)
+
+# Verifier task
 verification = Task(
-    description="Use your medical knowledge to verify if the data provided by the user is a blood test report or not.\n\
-Read the contents of the data and check if they are similar to a blood test report.",
-
-    expected_output="After verifying, if the data is indeed a blood test report then you should tell that to the senior docter and give the file_path: {file_path}.\n\
-If it is not a blood test report then say: No blood test report was given",
-
+    description="Check if the uploaded document appears to be a valid blood test report. If valid, confirm key indicators exist.",
+    expected_output="""
+- Confirm presence of blood test data (e.g., glucose, TSH, hemoglobin)
+- Ensure readable structure (patient details, units, reference ranges)
+- Return 'valid' or 'invalid' with brief justification
+- Avoid hallucination, do not assume correctness without checking
+""",
     agent=verifier,
-    tools=[BloodTestReportTool().read_data_tool],
+    tools=[BloodTestReportTool],
     async_execution=False
 )
